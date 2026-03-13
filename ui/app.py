@@ -1,10 +1,12 @@
 """Главное окно приложения (PySide6)."""
 
 import logging
+import sys
 from pathlib import Path
 
 from PySide6.QtWidgets import QMainWindow, QStackedWidget, QPushButton, QStatusBar
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 
 from utils.i18n import tr, get_language, set_language
 
@@ -29,6 +31,7 @@ class App(QMainWindow):
 
         self._build_statusbar()
         self._apply_title()
+        self._apply_icon()
 
         if initial_state == "restore" and config_path:
             logger.info("[App] Открываю экран восстановления")
@@ -36,6 +39,15 @@ class App(QMainWindow):
         else:
             logger.info("[App] Открываю стартовый экран")
             self._show_start()
+
+    def _apply_icon(self):
+        if getattr(sys, "frozen", False):
+            base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        else:
+            base = Path(__file__).parent.parent
+        icon_path = base / "assets" / "icon.ico"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
 
     def _apply_title(self):
         self.setWindowTitle(tr("app.window_title"))
