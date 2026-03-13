@@ -7,7 +7,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.helpers import setup_logging
+from utils.i18n import load_language
 _log_file = setup_logging()
+load_language()
 
 import logging
 logger = logging.getLogger(__name__)

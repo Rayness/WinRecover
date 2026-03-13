@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QTextCharFormat, QFont, QTextCursor
 
-# Цвета уровней логирования
+from utils.i18n import tr
+
 _LEVEL_COLORS: dict[str, str] = {
     "DEBUG":    "#6c7086",
     "INFO":     "#cdd6f4",
@@ -26,7 +27,7 @@ class LogWindow(QDialog):
         super().__init__(parent)
         self._log_file = log_file
         self._auto_scroll = True
-        self.setWindowTitle("📋 Логи WinRecover")
+        self.setWindowTitle(tr("log.title"))
         self.setMinimumSize(800, 480)
         self.resize(900, 540)
         self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
@@ -39,34 +40,32 @@ class LogWindow(QDialog):
         lo.setContentsMargins(8, 8, 8, 8)
         lo.setSpacing(6)
 
-        # Тулбар
         bar = QHBoxLayout()
 
-        self._lbl_status = QLabel("Ожидание новых записей...")
+        self._lbl_status = QLabel(tr("log.waiting"))
         self._lbl_status.setProperty("cssClass", "muted")
         bar.addWidget(self._lbl_status, 1)
 
-        self._chk_scroll = QCheckBox("Автопрокрутка")
+        self._chk_scroll = QCheckBox(tr("log.autoscroll"))
         self._chk_scroll.setChecked(True)
         self._chk_scroll.toggled.connect(lambda v: setattr(self, "_auto_scroll", v))
         bar.addWidget(self._chk_scroll)
 
-        btn_clear = QPushButton("Очистить")
+        btn_clear = QPushButton(tr("log.clear"))
         btn_clear.setProperty("cssClass", "flat")
         btn_clear.clicked.connect(self._clear)
         bar.addWidget(btn_clear)
 
-        btn_close = QPushButton("Закрыть")
+        btn_close = QPushButton(tr("log.close"))
         btn_close.setProperty("cssClass", "flat")
         btn_close.clicked.connect(self.close)
         bar.addWidget(btn_close)
 
         lo.addLayout(bar)
 
-        # Текстовое поле
         self._text = QPlainTextEdit()
         self._text.setReadOnly(True)
-        self._text.setMaximumBlockCount(5000)  # не растём бесконечно
+        self._text.setMaximumBlockCount(5000)
         font = QFont("Consolas", 9)
         font.setStyleHint(QFont.Monospace)
         self._text.setFont(font)
@@ -76,7 +75,6 @@ class LogWindow(QDialog):
         self._record_count = 0
 
     def _load_existing(self):
-        """Загружает текущее содержимое лог-файла при открытии окна."""
         if not self._log_file or not self._log_file.exists():
             return
         try:
@@ -84,7 +82,7 @@ class LogWindow(QDialog):
             self._text.setPlainText(text)
             self._record_count = text.count("\n")
             self._scroll_to_bottom()
-            self._lbl_status.setText(f"Загружено {self._record_count} строк из файла")
+            self._lbl_status.setText(tr("log.loaded", count=self._record_count))
         except OSError:
             pass
 
@@ -105,7 +103,7 @@ class LogWindow(QDialog):
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(text + "\n", fmt)
 
-        self._lbl_status.setText(f"{self._record_count} записей")
+        self._lbl_status.setText(tr("log.records", count=self._record_count))
         if self._auto_scroll:
             self._scroll_to_bottom()
 
@@ -116,4 +114,4 @@ class LogWindow(QDialog):
     def _clear(self):
         self._text.clear()
         self._record_count = 0
-        self._lbl_status.setText("Очищено")
+        self._lbl_status.setText(tr("log.cleared"))

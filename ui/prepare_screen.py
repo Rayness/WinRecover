@@ -32,6 +32,7 @@ from ui.components.disk_info import DiskTable
 from ui.components.file_list import FileTreeWidget
 from ui.components.progress_modal import ProgressModal
 from utils.helpers import format_size, get_username
+from utils.i18n import tr, tr_cat
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +74,12 @@ class PrepareScreen(QWidget):
 
         # Заголовок
         header = QHBoxLayout()
-        self.btn_back = QPushButton("\u2190 Назад")
+        self.btn_back = QPushButton(tr("prepare.btn_back"))
         self.btn_back.setProperty("cssClass", "flat")
         self.btn_back.setFixedWidth(90)
         self.btn_back.clicked.connect(self._go_back)
         header.addWidget(self.btn_back)
-        self.lbl_step = QLabel("Шаг 1 из 4 — Анализ дисков")
+        self.lbl_step = QLabel(tr("prepare.step1"))
         self.lbl_step.setProperty("cssClass", "heading")
         self.lbl_step.setAlignment(Qt.AlignCenter)
         header.addWidget(self.lbl_step, 1)
@@ -106,10 +107,10 @@ class PrepareScreen(QWidget):
         self._step_widgets[step].setVisible(True)
         self._current_step = step
         titles = [
-            "Шаг 1 из 4 — Анализ дисков",
-            "Шаг 2 из 4 — Поиск файлов",
-            "Шаг 3 из 4 — Выбор файлов",
-            "Шаг 4 из 4 — Обзор и запуск",
+            tr("prepare.step1"),
+            tr("prepare.step2"),
+            tr("prepare.step3"),
+            tr("prepare.step4"),
         ]
         self.lbl_step.setText(titles[step])
         if step == 0:
@@ -130,7 +131,7 @@ class PrepareScreen(QWidget):
         self.lbl_warning.setWordWrap(True)
         layout.addWidget(self.lbl_warning)
 
-        layout.addWidget(QLabel("Найденные разделы:"))
+        layout.addWidget(QLabel(tr("prepare.partitions")))
         self.disk_table_container = QVBoxLayout()
         layout.addLayout(self.disk_table_container)
 
@@ -147,7 +148,7 @@ class PrepareScreen(QWidget):
         self.lbl_games_warn.setProperty("cssClass", "warning")
         self.lbl_games_warn.setWordWrap(False)
         gw_header.addWidget(self.lbl_games_warn, 1)
-        self.btn_games_toggle = QPushButton("▼ Показать список")
+        self.btn_games_toggle = QPushButton(tr("prepare.games.show"))
         self.btn_games_toggle.setProperty("cssClass", "flat")
         self.btn_games_toggle.setFixedWidth(150)
         self.btn_games_toggle.clicked.connect(self._toggle_games_list)
@@ -163,7 +164,7 @@ class PrepareScreen(QWidget):
 
         self.games_tree = QTreeWidget()
         self.games_tree.setColumnCount(3)
-        self.games_tree.setHeaderLabels(["Название игры", "Платформа", "Размер"])
+        self.games_tree.setHeaderLabels([tr("prepare.games.col_name"), tr("prepare.games.col_plat"), "Размер"])
         self.games_tree.setAlternatingRowColors(True)
         self.games_tree.setRootIsDecorated(False)
         self.games_tree.setSortingEnabled(True)
@@ -176,10 +177,7 @@ class PrepareScreen(QWidget):
         self.games_tree.setColumnWidth(2, 90)
         gl_lo.addWidget(self.games_tree)
 
-        lbl_tip = QLabel(
-            "💡 Перенесите игры на другой диск (D:, E:…) до переустановки — "
-            "иначе все данные на C: будут удалены вместе с ними."
-        )
+        lbl_tip = QLabel(tr("prepare.games.tip"))
         lbl_tip.setWordWrap(True)
         lbl_tip.setProperty("cssClass", "muted")
         gl_lo.addWidget(lbl_tip)
@@ -199,7 +197,7 @@ class PrepareScreen(QWidget):
         self.lbl_vaults_warn.setProperty("cssClass", "warning")
         self.lbl_vaults_warn.setWordWrap(False)
         vw_header.addWidget(self.lbl_vaults_warn, 1)
-        self.btn_vaults_toggle = QPushButton("▼ Показать список")
+        self.btn_vaults_toggle = QPushButton(tr("prepare.vaults.show"))
         self.btn_vaults_toggle.setProperty("cssClass", "flat")
         self.btn_vaults_toggle.setFixedWidth(150)
         self.btn_vaults_toggle.clicked.connect(self._toggle_vaults_list)
@@ -214,7 +212,7 @@ class PrepareScreen(QWidget):
 
         self.vaults_tree = QTreeWidget()
         self.vaults_tree.setColumnCount(3)
-        self.vaults_tree.setHeaderLabels(["Хранилище", "Путь", "Размер"])
+        self.vaults_tree.setHeaderLabels([tr("prepare.vaults.col_name"), tr("prepare.vaults.col_path"), "Размер"])
         self.vaults_tree.setAlternatingRowColors(True)
         self.vaults_tree.setRootIsDecorated(False)
         self.vaults_tree.setSortingEnabled(True)
@@ -227,10 +225,7 @@ class PrepareScreen(QWidget):
         self.vaults_tree.setColumnWidth(2, 90)
         vl_lo.addWidget(self.vaults_tree)
 
-        lbl_vault_tip = QLabel(
-            "💡 Obsidian хранит заметки локально. Добавьте хранилища в копирование "
-            "через «Добавить свою папку» на шаге 3, или скопируйте вручную."
-        )
+        lbl_vault_tip = QLabel(tr("prepare.vaults.tip"))
         lbl_vault_tip.setWordWrap(True)
         lbl_vault_tip.setProperty("cssClass", "muted")
         vl_lo.addWidget(lbl_vault_tip)
@@ -240,7 +235,7 @@ class PrepareScreen(QWidget):
 
         # Настройки
         row1 = QHBoxLayout()
-        row1.addWidget(QLabel("Диск назначения:"))
+        row1.addWidget(QLabel(tr("prepare.dest_disk")))
         self.combo_dest = QComboBox()
         self.combo_dest.setMinimumWidth(80)
         self.combo_dest.currentTextChanged.connect(self._on_dest_changed)
@@ -249,17 +244,17 @@ class PrepareScreen(QWidget):
         layout.addLayout(row1)
 
         row2 = QHBoxLayout()
-        row2.addWidget(QLabel("Папка:"))
+        row2.addWidget(QLabel(tr("prepare.dest_folder")))
         self.edit_folder = QLineEdit()
         self.edit_folder.setMinimumWidth(300)
         row2.addWidget(self.edit_folder, 1)
-        btn_browse = QPushButton("Обзор")
+        btn_browse = QPushButton(tr("prepare.btn_browse"))
         btn_browse.clicked.connect(self._browse_folder)
         row2.addWidget(btn_browse)
         layout.addLayout(row2)
 
         row3 = QHBoxLayout()
-        row3.addWidget(QLabel("Название сессии:"))
+        row3.addWidget(QLabel(tr("prepare.session_name")))
         self.edit_session = QLineEdit()
         self.edit_session.setMinimumWidth(300)
         row3.addWidget(self.edit_session, 1)
@@ -269,7 +264,7 @@ class PrepareScreen(QWidget):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_next = QPushButton("Далее \u2192")
+        btn_next = QPushButton(tr("prepare.btn_next"))
         btn_next.setProperty("cssClass", "primary")
         btn_next.setFixedSize(140, 38)
         btn_next.clicked.connect(lambda: self._show_step(1))
@@ -282,10 +277,7 @@ class PrepareScreen(QWidget):
     def _analyze_disks(self):
         self.system_disk = get_system_disk()
         self.partitions = get_all_partitions()
-        self.lbl_sys_disk.setText(
-            f"\U0001f4bb Системный диск: {self.system_disk.rstrip(chr(92))}  "
-            f"(Windows будет переустановлена сюда)"
-        )
+        self.lbl_sys_disk.setText(tr("prepare.system_disk", disk=self.system_disk.rstrip(chr(92))))
         while self.disk_table_container.count():
             w = self.disk_table_container.takeAt(0).widget()
             if w:
@@ -306,16 +298,14 @@ class PrepareScreen(QWidget):
                 self.combo_dest.setCurrentIndex(idx)
         elif self.partitions:
             self.combo_dest.setCurrentIndex(0)
-            self.lbl_warning.setText(
-                "\u26a0\ufe0f Других дисков не найдено. Папка 'recover' будет создана на системном диске."
-            )
+            self.lbl_warning.setText(tr("prepare.warn_no_other_disk"))
             self.lbl_warning.setProperty("cssClass", "warning")
             self.lbl_warning.setVisible(True)
             self.lbl_warning.style().unpolish(self.lbl_warning)
             self.lbl_warning.style().polish(self.lbl_warning)
 
         if len(self.partitions) == 1 and self.partitions[0].free < 1_000_000_000:
-            self.lbl_warning.setText("\U0001f534 Подключите внешний накопитель для сохранения данных")
+            self.lbl_warning.setText(tr("prepare.warn_no_disk"))
             self.lbl_warning.setProperty("cssClass", "error")
             self.lbl_warning.setVisible(True)
             self.lbl_warning.style().unpolish(self.lbl_warning)
@@ -359,8 +349,7 @@ class PrepareScreen(QWidget):
         total_size = sum(g.size_bytes for g in games)
         size_str = format_size(total_size) if total_size > 0 else f"{len(games)} шт."
         self.lbl_games_warn.setText(
-            f"⚠️  На диске {self.system_disk.rstrip(chr(92))} найдены игры: "
-            f"{len(games)} шт., ~{size_str} — будут удалены при переустановке!"
+            tr("prepare.games.warn", disk=self.system_disk.rstrip(chr(92)), count=len(games), size=size_str)
         )
         self.games_tree.setSortingEnabled(False)
         self.games_tree.clear()
@@ -382,12 +371,13 @@ class PrepareScreen(QWidget):
             return
         total_size = sum(v.size_bytes for v in vaults)
         size_str = f", ~{format_size(total_size)}" if total_size > 0 else ""
-        plural = "хранилище" if len(vaults) == 1 else (
-            "хранилища" if len(vaults) <= 4 else "хранилищ"
+        plural = tr("prepare.vaults.singular") if len(vaults) == 1 else (
+            tr("prepare.vaults.few") if len(vaults) <= 4 else tr("prepare.vaults.many")
         )
         self.lbl_vaults_warn.setText(
-            f"⚠️  Obsidian: найдено {len(vaults)} {plural}{size_str} на "
-            f"{self.system_disk.rstrip(chr(92))} — заметки будут удалены при переустановке!"
+            tr("prepare.vaults.warn_text",
+               count=len(vaults), plural=plural, size=size_str,
+               disk=self.system_disk.rstrip(chr(92)))
         )
         self.vaults_tree.setSortingEnabled(False)
         self.vaults_tree.clear()
@@ -406,21 +396,21 @@ class PrepareScreen(QWidget):
         visible = self.games_list_widget.isVisible()
         self.games_list_widget.setVisible(not visible)
         self.btn_games_toggle.setText(
-            "▲ Скрыть список" if not visible else "▼ Показать список"
+            tr("prepare.games.hide") if not visible else tr("prepare.games.show")
         )
 
     def _toggle_vaults_list(self):
         visible = self.vaults_list_widget.isVisible()
         self.vaults_list_widget.setVisible(not visible)
         self.btn_vaults_toggle.setText(
-            "▲ Скрыть список" if not visible else "▼ Показать список"
+            tr("prepare.vaults.hide") if not visible else tr("prepare.vaults.show")
         )
 
     def _on_dest_changed(self, value):
         self.edit_folder.setText(f"{value}\\recover")
 
     def _browse_folder(self):
-        path = QFileDialog.getExistingDirectory(self, "Выберите папку", self.combo_dest.currentText())
+        path = QFileDialog.getExistingDirectory(self, tr("prepare.dlg_choose_folder"), self.combo_dest.currentText())
         if path:
             self.edit_folder.setText(path)
 
@@ -431,12 +421,12 @@ class PrepareScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         layout.addStretch()
-        lbl = QLabel("Нажмите кнопку для поиска файлов на системном диске")
+        lbl = QLabel(tr("prepare.scan.idle"))
         lbl.setProperty("cssClass", "subtitle")
         lbl.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl)
 
-        btn_find = QPushButton("\U0001f50d НАЙТИ ФАЙЛЫ")
+        btn_find = QPushButton(tr("prepare.scan.btn"))
         btn_find.setProperty("cssClass", "primary")
         btn_find.setFixedSize(220, 44)
         btn_find.clicked.connect(self._show_search_dialog)
@@ -444,7 +434,7 @@ class PrepareScreen(QWidget):
 
         self.scan_widget = QWidget()
         scan_layout = QVBoxLayout(self.scan_widget)
-        self.scan_lbl = QLabel("Сканирование...")
+        self.scan_lbl = QLabel(tr("prepare.scan.running"))
         self.scan_lbl.setAlignment(Qt.AlignCenter)
         scan_layout.addWidget(self.scan_lbl)
         self.scan_bar = QProgressBar()
@@ -465,26 +455,26 @@ class PrepareScreen(QWidget):
 
     def _show_search_dialog(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle("Что искать?")
+        dialog.setWindowTitle(tr("prepare.scan.dlg_title"))
         dialog.setFixedSize(400, 270)
         layout = QVBoxLayout(dialog)
-        layout.addWidget(QLabel("<b style='font-size:16px'>Что искать?</b>"))
+        layout.addWidget(QLabel(tr("prepare.scan.dlg_header")))
         layout.addSpacing(8)
-        cb_configs = QCheckBox("Конфиги программ (AppData)\nНастройки установленных приложений")
+        cb_configs = QCheckBox(tr("prepare.scan.cb_configs"))
         cb_configs.setChecked(True)
         layout.addWidget(cb_configs)
-        cb_personal = QCheckBox("Личные файлы\nДокументы, Изображения, Видео, Музыка")
+        cb_personal = QCheckBox(tr("prepare.scan.cb_personal"))
         layout.addWidget(cb_personal)
-        cb_programs = QCheckBox("Список установленных программ\nЧтобы знать, что переустанавливать после")
+        cb_programs = QCheckBox(tr("prepare.scan.cb_programs"))
         cb_programs.setChecked(True)
         layout.addWidget(cb_programs)
         layout.addStretch()
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_cancel = QPushButton("Отмена")
+        btn_cancel = QPushButton(tr("prepare.scan.btn_cancel"))
         btn_cancel.clicked.connect(dialog.reject)
         btn_row.addWidget(btn_cancel)
-        btn_start = QPushButton("Начать поиск")
+        btn_start = QPushButton(tr("prepare.scan.btn_start"))
         btn_start.setProperty("cssClass", "primary")
         btn_start.clicked.connect(dialog.accept)
         btn_row.addWidget(btn_start)
@@ -492,7 +482,7 @@ class PrepareScreen(QWidget):
 
         if dialog.exec() == QDialog.Accepted:
             if not cb_configs.isChecked() and not cb_personal.isChecked() and not cb_programs.isChecked():
-                QMessageBox.warning(self, "Внимание", "Выберите хотя бы один тип!")
+                QMessageBox.warning(self, tr("prepare.warn_title"), tr("prepare.scan.warn_empty"))
                 return
             self._start_scan(cb_configs.isChecked(), cb_personal.isChecked(), cb_programs.isChecked())
 
@@ -552,7 +542,7 @@ class PrepareScreen(QWidget):
         self.scan_widget.setVisible(False)
         total = len(self.found_configs) + len(self.found_personal) + len(self.found_programs)
         if total == 0:
-            QMessageBox.information(self, "Результат", "Ничего не найдено.")
+            QMessageBox.information(self, tr("prepare.warn_title"), tr("prepare.scan.nothing_found"))
             return
         self._populate_step3(self._scan_personal, getattr(self, "_scan_programs", False))
         self._show_step(2)
@@ -566,7 +556,7 @@ class PrepareScreen(QWidget):
         layout.addWidget(self.step3_tabs, 1)
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        self.btn_add = QPushButton("\u2705 Добавить выбранное")
+        self.btn_add = QPushButton(tr("prepare.s3.btn_add"))
         self.btn_add.setProperty("cssClass", "success")
         self.btn_add.setFixedSize(220, 38)
         self.btn_add.clicked.connect(self._add_selected)
@@ -585,25 +575,25 @@ class PrepareScreen(QWidget):
 
         # Кнопки выделения
         top = QHBoxLayout()
-        b1 = QPushButton("Выбрать все")
+        b1 = QPushButton(tr("prepare.s3.btn_all"))
         b1.clicked.connect(lambda: self.config_tree.select_all())
         top.addWidget(b1)
-        b2 = QPushButton("Снять все")
+        b2 = QPushButton(tr("prepare.s3.btn_none"))
         b2.clicked.connect(lambda: self.config_tree.deselect_all())
         top.addWidget(b2)
-        b_sel_cfg = QPushButton("Выделить конфиги")
+        b_sel_cfg = QPushButton(tr("prepare.s3.btn_configs"))
         b_sel_cfg.clicked.connect(lambda: self.config_tree.select_by_type("Конфиг"))
         top.addWidget(b_sel_cfg)
-        b_sel_other = QPushButton("Выделить другое")
+        b_sel_other = QPushButton(tr("prepare.s3.btn_other"))
         b_sel_other.clicked.connect(lambda: self.config_tree.select_by_type("Другое"))
         top.addWidget(b_sel_other)
-        b_sel_rec = QPushButton("⭐ Рекомендуемые")
+        b_sel_rec = QPushButton(tr("prepare.s3.btn_rec"))
         b_sel_rec.setProperty("cssClass", "success")
-        b_sel_rec.setToolTip("Выделить приложения, которые рекомендуем сохранить")
+        b_sel_rec.setToolTip(tr("prepare.s3.btn_rec_tip"))
         b_sel_rec.clicked.connect(lambda: self.config_tree.select_recommended())
         top.addWidget(b_sel_rec)
         top.addStretch()
-        b3 = QPushButton("\U0001f4c1 Добавить свою папку")
+        b3 = QPushButton(tr("prepare.s3.btn_folder"))
         b3.clicked.connect(self._add_custom_config_folder)
         top.addWidget(b3)
         lo.addLayout(top)
@@ -611,13 +601,13 @@ class PrepareScreen(QWidget):
         # Строка поиска + разворачивание
         search_row = QHBoxLayout()
         self._search_config = QLineEdit()
-        self._search_config.setPlaceholderText("🔍 Поиск по имени...")
+        self._search_config.setPlaceholderText(tr("prepare.s3.search_configs"))
         self._search_config.setClearButtonEnabled(True)
         search_row.addWidget(self._search_config, 1)
-        btn_expand = QPushButton("↕ Развернуть всё")
+        btn_expand = QPushButton(tr("prepare.s3.btn_expand"))
         btn_expand.setProperty("cssClass", "flat")
         btn_expand.setFixedWidth(130)
-        btn_collapse = QPushButton("↕ Свернуть всё")
+        btn_collapse = QPushButton(tr("prepare.s3.btn_collapse"))
         btn_collapse.setProperty("cssClass", "flat")
         btn_collapse.setFixedWidth(130)
         search_row.addWidget(btn_expand)
@@ -631,7 +621,7 @@ class PrepareScreen(QWidget):
         lo.addWidget(self.config_tree, 1)
 
         # Статус-бар
-        self._lbl_config_status = QLabel("Выбрано: 0")
+        self._lbl_config_status = QLabel(tr("prepare.s3.status_empty"))
         self._lbl_config_status.setProperty("cssClass", "muted")
         lo.addWidget(self._lbl_config_status)
         self.config_tree.selection_changed.connect(self._update_config_status)
@@ -657,8 +647,8 @@ class PrepareScreen(QWidget):
         if duplicates:
             dup_names = ", ".join(duplicates[:6])
             if len(duplicates) > 6:
-                dup_names += f" и ещё {len(duplicates) - 6}"
-            warn_lbl = QLabel(f"⚠️ Папки есть в Local и Roaming одновременно: {dup_names}")
+                dup_names += tr("prepare.s3.warn_dup_more", n=len(duplicates) - 6)
+            warn_lbl = QLabel(tr("prepare.s3.warn_dup", names=dup_names))
             warn_lbl.setProperty("cssClass", "warning")
             warn_lbl.setWordWrap(True)
             lo.addWidget(warn_lbl)
@@ -667,7 +657,7 @@ class PrepareScreen(QWidget):
             warn_lbl.style().polish(warn_lbl)
 
         self._update_config_status()
-        self.step3_tabs.addTab(tab_cfg, f"Конфиги ({len(self.found_configs)})")
+        self.step3_tabs.addTab(tab_cfg, tr("prepare.s3.tab_configs", count=len(self.found_configs)))
 
         # ── Личные файлы ─────────────────────────────────────────────────
         self.personal_tree = None
@@ -677,37 +667,37 @@ class PrepareScreen(QWidget):
             lo2.setContentsMargins(4, 4, 4, 4)
 
             top2 = QHBoxLayout()
-            bp1 = QPushButton("Выбрать все")
+            bp1 = QPushButton(tr("prepare.s3.btn_all"))
             bp1.clicked.connect(lambda: self.personal_tree.select_all())
             top2.addWidget(bp1)
-            bp2 = QPushButton("Снять все")
+            bp2 = QPushButton(tr("prepare.s3.btn_none"))
             bp2.clicked.connect(lambda: self.personal_tree.deselect_all())
             top2.addWidget(bp2)
-            lbl_group = QLabel("Группировка:")
+            lbl_group = QLabel(tr("prepare.s3.prog_group"))
             lbl_group.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
             top2.addWidget(lbl_group)
             self._combo_grouping = QComboBox()
             self._combo_grouping.addItems([
-                "📁 По папкам",
-                "🏷 По типу файлов",
-                "📁 По папкам + типу",
-                "📋 Без группировки",
+                tr("prepare.s3.group_folder"),
+                tr("prepare.s3.group_type"),
+                tr("prepare.s3.group_folder_type"),
+                tr("prepare.s3.group_flat"),
             ])
             self._combo_grouping.setFixedWidth(190)
             self._combo_grouping.currentIndexChanged.connect(self._on_grouping_changed)
             top2.addWidget(self._combo_grouping)
             top2.addStretch()
-            bp3 = QPushButton("\U0001f4c4 Добавить файлы")
+            bp3 = QPushButton(tr("prepare.s3.btn_add_files"))
             bp3.clicked.connect(self._add_custom_personal_files)
             top2.addWidget(bp3)
-            bp4 = QPushButton("\U0001f4c1 Добавить папку")
+            bp4 = QPushButton(tr("prepare.s3.btn_add_folder"))
             bp4.clicked.connect(self._add_custom_personal_folder)
             top2.addWidget(bp4)
             lo2.addLayout(top2)
 
             # Поиск для личных файлов
             self._search_personal = QLineEdit()
-            self._search_personal.setPlaceholderText("🔍 Поиск по имени...")
+            self._search_personal.setPlaceholderText(tr("prepare.s3.search_personal"))
             self._search_personal.setClearButtonEnabled(True)
             lo2.addWidget(self._search_personal)
 
@@ -716,13 +706,13 @@ class PrepareScreen(QWidget):
             lo2.addWidget(self.personal_tree, 1)
 
             # Статус-бар
-            self._lbl_personal_status = QLabel("Выбрано: 0")
+            self._lbl_personal_status = QLabel(tr("prepare.s3.status_empty"))
             self._lbl_personal_status.setProperty("cssClass", "muted")
             lo2.addWidget(self._lbl_personal_status)
             self.personal_tree.selection_changed.connect(self._update_personal_status)
 
             self._rebuild_personal_tree()
-            self.step3_tabs.addTab(tab_per, f"Личные файлы ({len(self.found_personal)})")
+            self.step3_tabs.addTab(tab_per, tr("prepare.s3.tab_personal", count=len(self.found_personal)))
 
         # ── Программы ────────────────────────────────────────────────────
         if has_programs and self.found_programs:
@@ -740,7 +730,7 @@ class PrepareScreen(QWidget):
         # ── Дерево ───────────────────────────────────────────────────────
         tree = QTreeWidget()
         tree.setColumnCount(4)
-        tree.setHeaderLabels(["Программа", "Издатель", "Версия", "Установлена"])
+        tree.setHeaderLabels([tr("prepare.s3.prog_col_name"), tr("prepare.s3.prog_col_pub"), tr("prepare.s3.prog_col_ver"), tr("prepare.s3.prog_col_date")])
         tree.setAlternatingRowColors(True)
         tree.setSortingEnabled(True)
         tree.setRootIsDecorated(not review)
@@ -762,21 +752,21 @@ class PrepareScreen(QWidget):
                 item.setText(3, prog.install_date_fmt)
                 tree.addTopLevelItem(item)
             lo.addWidget(tree, 1)
-            tab_widget.addTab(tab, f"Программы ({len(programs)})")
+            tab_widget.addTab(tab, tr("prepare.s3.tab_programs", count=len(programs)))
             return
 
         # ── Интерактивный режим (шаг 3) ──────────────────────────────────
 
         # Строка 1: кнопки + группировка
         ctrl_row = QHBoxLayout()
-        btn_all = QPushButton("Выбрать все")
-        btn_none = QPushButton("Снять все")
+        btn_all = QPushButton(tr("prepare.s3.prog_all"))
+        btn_none = QPushButton(tr("prepare.s3.prog_none"))
         ctrl_row.addWidget(btn_all)
         ctrl_row.addWidget(btn_none)
         ctrl_row.addStretch()
-        ctrl_row.addWidget(QLabel("Группировка:"))
+        ctrl_row.addWidget(QLabel(tr("prepare.s3.prog_group")))
         combo_group = QComboBox()
-        combo_group.addItems(["📁 По категориям", "📋 Без группировки"])
+        combo_group.addItems([tr("prepare.s3.prog_grouped"), tr("prepare.s3.prog_flat")])
         combo_group.setFixedWidth(175)
         ctrl_row.addWidget(combo_group)
         lo.addLayout(ctrl_row)
@@ -784,15 +774,15 @@ class PrepareScreen(QWidget):
         # Строка 2: поиск + быстрые кнопки снятия
         quick_row = QHBoxLayout()
         search_prog = QLineEdit()
-        search_prog.setPlaceholderText("🔍 Поиск по программе или издателю...")
+        search_prog.setPlaceholderText(tr("prepare.s3.prog_search"))
         search_prog.setClearButtonEnabled(True)
         quick_row.addWidget(search_prog, 1)
         quick_row.addSpacing(6)
-        quick_row.addWidget(QLabel("Снять:"))
+        quick_row.addWidget(QLabel(tr("prepare.s3.prog_deselect")))
         _quick_cats = [
-            ("Драйверы",  "🔧 Драйверы"),
-            ("Microsoft", "🏢 Microsoft"),
-            ("Системные", "📦 Системные"),
+            (tr("prepare.s3.prog_drivers"), "🔧 Драйверы"),
+            (tr("prepare.s3.prog_ms"),      "🏢 Microsoft"),
+            (tr("prepare.s3.prog_sys"),     "📦 Системные"),
         ]
         for btn_label, cat_name in _quick_cats:
             btn_q = QPushButton(btn_label)
@@ -809,7 +799,7 @@ class PrepareScreen(QWidget):
         lo.addWidget(lbl_status)
 
         # Подсказка об авто-снятии
-        lbl_hint = QLabel("💡 Драйверы, Microsoft и системные компоненты сняты автоматически — они переустанавливаются сами.")
+        lbl_hint = QLabel(tr("prepare.s3.prog_hint"))
         lbl_hint.setWordWrap(True)
         lbl_hint.setProperty("cssClass", "muted")
         lo.addWidget(lbl_hint)
@@ -834,7 +824,7 @@ class PrepareScreen(QWidget):
                     total += 1
                     if top.checkState(0) == Qt.Checked:
                         checked += 1
-            lbl_status.setText(f"Выбрано: {checked} из {total}")
+            lbl_status.setText(tr("prepare.s3.prog_status", checked=checked, total=total))
 
         def _on_item_changed(item, col):
             if col != 0 or propagating[0]:
@@ -875,10 +865,10 @@ class PrepareScreen(QWidget):
             prefix = "    " if indent else ""
             if is_skip:
                 display = f"{prefix}💤  {prog.name}"
-                tip = f"⏭ Можно пропустить: переустанавливается автоматически"
+                tip = tr("prepare.s3.prog_skip_tip")
             else:
                 display = f"{prefix}⭐  {prog.name}"
-                tip = f"✅ Рекомендуем включить в список для переустановки"
+                tip = tr("prepare.s3.prog_rec_tip")
             item.setText(0, display)
             item.setText(1, prog.publisher)
             item.setText(2, prog.version)
@@ -912,7 +902,7 @@ class PrepareScreen(QWidget):
                     is_skip_cat = cat in _SKIP_CATS
                     hdr_item = QTreeWidgetItem()
                     hdr_item.setText(0, cat)
-                    hdr_item.setText(1, f"{len(entries)} программ")
+                    hdr_item.setText(1, tr("prepare.s3.prog_count", count=len(entries)))
                     hdr_item.setCheckState(0, Qt.Unchecked if is_skip_cat else Qt.Checked)
                     hdr_item.setFlags(hdr_item.flags() | Qt.ItemIsUserCheckable)
                     if is_skip_cat:
@@ -1017,7 +1007,7 @@ class PrepareScreen(QWidget):
 
         _populate_tree(True)  # по умолчанию — по категориям
 
-        tab_widget.addTab(tab, f"Программы ({len(programs)})")
+        tab_widget.addTab(tab, tr("prepare.s3.tab_programs", count=len(programs)))
 
     # Режим → параметр group_by
     _GROUPING_MODES = ["folder", "type", "folder+type", "flat"]
@@ -1058,10 +1048,11 @@ class PrepareScreen(QWidget):
             return
         sel, total, sel_size, tot_size = self.config_tree.get_stats()
         if sel == 0:
-            self._lbl_config_status.setText(f"Выбрано: 0 из {total}")
+            self._lbl_config_status.setText(tr("prepare.s3.status_zero", total=total))
         else:
             self._lbl_config_status.setText(
-                f"Выбрано: {sel} из {total}  •  {format_size(sel_size)} из {format_size(tot_size)}"
+                tr("prepare.s3.status", sel=sel, total=total,
+                   sel_size=format_size(sel_size), tot_size=format_size(tot_size))
             )
 
     def _update_personal_status(self):
@@ -1069,14 +1060,15 @@ class PrepareScreen(QWidget):
             return
         sel, total, sel_size, tot_size = self.personal_tree.get_stats()
         if sel == 0:
-            self._lbl_personal_status.setText(f"Выбрано: 0 из {total}")
+            self._lbl_personal_status.setText(tr("prepare.s3.status_zero", total=total))
         else:
             self._lbl_personal_status.setText(
-                f"Выбрано: {sel} из {total}  •  {format_size(sel_size)} из {format_size(tot_size)}"
+                tr("prepare.s3.status", sel=sel, total=total,
+                   sel_size=format_size(sel_size), tot_size=format_size(tot_size))
             )
 
     def _add_custom_config_folder(self):
-        path = QFileDialog.getExistingDirectory(self, "Выберите папку с конфигом")
+        path = QFileDialog.getExistingDirectory(self, tr("prepare.dlg_folder"))
         if not path:
             return
         p = Path(path)
@@ -1096,7 +1088,7 @@ class PrepareScreen(QWidget):
         )
 
     def _add_custom_personal_folder(self):
-        path = QFileDialog.getExistingDirectory(self, "Выберите папку")
+        path = QFileDialog.getExistingDirectory(self, tr("prepare.dlg_folder2"))
         if not path or not self.personal_tree:
             return
         p = Path(path)
@@ -1114,7 +1106,7 @@ class PrepareScreen(QWidget):
         )
 
     def _add_custom_personal_files(self):
-        files, _ = QFileDialog.getOpenFileNames(self, "Выберите файлы")
+        files, _ = QFileDialog.getOpenFileNames(self, tr("prepare.dlg_files"))
         if not files or not self.personal_tree:
             return
         user_dir = Path.home()
@@ -1166,7 +1158,7 @@ class PrepareScreen(QWidget):
         logger.info("[PrepareScreen] Выбрано: %d файлов, %d программ",
                     len(self.added_entries), len(self.selected_programs))
         if not self.added_entries and not self.selected_programs:
-            QMessageBox.warning(self, "Внимание", "Выберите хотя бы один элемент!")
+            QMessageBox.warning(self, tr("prepare.warn_title"), tr("prepare.warn_pick_one"))
             return
         self._populate_step4()
         self._show_step(3)
@@ -1184,10 +1176,10 @@ class PrepareScreen(QWidget):
         layout.addWidget(self.lbl_summary)
 
         mode_row = QHBoxLayout()
-        mode_row.addWidget(QLabel("Режим:"))
-        self.radio_copy = QRadioButton("Просто скопировать")
+        mode_row.addWidget(QLabel(tr("prepare.s4.mode")))
+        self.radio_copy = QRadioButton(tr("prepare.s4.mode_copy"))
         self.radio_copy.setChecked(True)
-        self.radio_archive = QRadioButton("Архивировать (ZIP)")
+        self.radio_archive = QRadioButton(tr("prepare.s4.mode_archive"))
         self.mode_group = QButtonGroup()
         self.mode_group.addButton(self.radio_copy, 0)
         self.mode_group.addButton(self.radio_archive, 1)
@@ -1198,7 +1190,7 @@ class PrepareScreen(QWidget):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_create = QPushButton("\U0001f4be СОЗДАТЬ ФАЙЛ ВОССТАНОВЛЕНИЯ")
+        btn_create = QPushButton(tr("prepare.s4.btn_create"))
         btn_create.setProperty("cssClass", "success")
         btn_create.setFixedSize(320, 42)
         btn_create.clicked.connect(self._start_copy)
@@ -1228,7 +1220,7 @@ class PrepareScreen(QWidget):
                 )
             self._review_config_tree.select_all()
             tl.addWidget(self._review_config_tree)
-            self.step4_tabs.addTab(tab, f"Конфиги ({len(configs)})")
+            self.step4_tabs.addTab(tab, tr("prepare.s4.tab_configs", count=len(configs)))
 
         if personal:
             tab = QWidget()
@@ -1239,7 +1231,7 @@ class PrepareScreen(QWidget):
             self._review_personal_tree.select_all()
             self._review_personal_tree.expandAll()
             tl.addWidget(self._review_personal_tree)
-            self.step4_tabs.addTab(tab, f"Личные файлы ({len(personal)})")
+            self.step4_tabs.addTab(tab, tr("prepare.s4.tab_personal", count=len(personal)))
 
         if self.selected_programs:
             self._build_programs_tab(self.step4_tabs, self.selected_programs, review=True)
@@ -1250,11 +1242,11 @@ class PrepareScreen(QWidget):
             free = psutil.disk_usage(dest_disk).free
         except Exception:
             free = 0
-        prog_part = f", {len(self.selected_programs)} программ" if self.selected_programs else ""
+        prog_part = tr("prepare.s4.summary_progs", count=len(self.selected_programs)) if self.selected_programs else ""
         self.lbl_summary.setText(
-            f"Итого: {len(configs)} конфигов, {len(personal)} файлов{prog_part}  \u2022  "
-            f"Общий размер: {format_size(total_size)}  \u2022  "
-            f"Свободно на {self.combo_dest.currentText()}: {format_size(free)}"
+            tr("prepare.s4.summary",
+               configs=len(configs), files=len(personal), programs=prog_part,
+               size=format_size(total_size), disk=self.combo_dest.currentText(), free=format_size(free))
         )
 
     def _start_copy(self):
@@ -1265,7 +1257,7 @@ class PrepareScreen(QWidget):
         if self._review_personal_tree:
             final.extend(self._review_personal_tree.get_selected_data())
         if not final and not self.selected_programs:
-            QMessageBox.warning(self, "Внимание", "Нет элементов!")
+            QMessageBox.warning(self, tr("prepare.warn_title"), tr("prepare.s4.warn_empty"))
             return
 
         total_size = sum(e["size_bytes"] for e in final)
@@ -1276,9 +1268,10 @@ class PrepareScreen(QWidget):
         except Exception:
             free = 0
         if free < required:
-            QMessageBox.critical(self, "Недостаточно места",
-                f"Нужно: {format_size(required)}\nДоступно: {format_size(free)}\n\n"
-                f"Освободите {format_size(required - free)} или выберите другой диск.")
+            QMessageBox.critical(self, tr("prepare.s4.space_title"),
+                tr("prepare.s4.space_msg",
+                   required=format_size(required), free=format_size(free),
+                   diff=format_size(required - free)))
             return
 
         self.added_entries = final
@@ -1300,7 +1293,7 @@ class PrepareScreen(QWidget):
                 source_path=e["source_path"], relative_path=e["relative_path"],
                 is_dir=e["is_dir"], size_bytes=e["size_bytes"])
 
-        modal = ProgressModal(self, title="Копирование файлов")
+        modal = ProgressModal(self, title=tr("prepare.s4.copy_title"))
         self._copy_signals = _CopySignals()
 
         def _on_done(results):
@@ -1317,13 +1310,13 @@ class PrepareScreen(QWidget):
                     logger.warning("Не удалось сохранить список программ: %s", exc)
             ok = sum(1 for e in results if e.get("status") == "ok")
             err = sum(1 for e in results if e.get("status", "").startswith("error"))
-            msg = f"\u2705 Файл восстановления создан!\n\nУспешно: {ok}\n"
+            msg = tr("prepare.s4.done_msg", ok=ok)
             if err:
-                msg += f"Ошибок: {err}\n"
+                msg += tr("prepare.s4.done_errors", err=err)
             if self.selected_programs:
-                msg += f"Программ в списке: {len(self.selected_programs)}\n"
-            msg += f"\nПуть: {dest_path}"
-            QMessageBox.information(self, "Готово", msg)
+                msg += tr("prepare.s4.done_progs", count=len(self.selected_programs))
+            msg += "\n" + tr("prepare.s4.done_path", path=dest_path)
+            QMessageBox.information(self, tr("prepare.s4.done_title"), msg)
 
         self._copy_signals.finished.connect(_on_done)
 

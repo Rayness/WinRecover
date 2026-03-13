@@ -3,6 +3,8 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 from PySide6.QtCore import Qt
 
+from utils.i18n import tr
+
 
 class StartScreen(QWidget):
     """Экран приветствия с выбором: подготовка или восстановление."""
@@ -30,7 +32,7 @@ class StartScreen(QWidget):
         layout.addWidget(title)
 
         # Подзаголовок
-        subtitle = QLabel("Помощник при переустановке Windows")
+        subtitle = QLabel(tr("start.subtitle"))
         subtitle.setProperty("cssClass", "subtitle")
         subtitle.setAlignment(Qt.AlignCenter)
         layout.addWidget(subtitle)
@@ -39,8 +41,7 @@ class StartScreen(QWidget):
 
         # Карточка: Подготовка
         btn_prepare = QPushButton(
-            "\U0001f504  ПОДГОТОВКА К ПЕРЕУСТАНОВКЕ\n\n"
-            "Сохраните настройки и файлы перед\nпереустановкой Windows"
+            f"{tr('start.btn_prepare.title')}\n\n{tr('start.btn_prepare.desc')}"
         )
         btn_prepare.setProperty("cssClass", "card")
         btn_prepare.setFixedSize(500, 110)
@@ -52,8 +53,7 @@ class StartScreen(QWidget):
 
         # Карточка: Восстановление
         btn_restore = QPushButton(
-            "\u2705  WINDOWS УЖЕ ПЕРЕУСТАНОВЛЕНА\n\n"
-            "Восстановите файлы и настройки\nиз резервной копии"
+            f"{tr('start.btn_restore.title')}\n\n{tr('start.btn_restore.desc')}"
         )
         btn_restore.setProperty("cssClass", "card")
         btn_restore.setFixedSize(500, 110)
@@ -65,9 +65,7 @@ class StartScreen(QWidget):
 
         # Карточка: Рекомендации
         btn_rec = QPushButton(
-            "\U0001f4a1  РЕКОМЕНДАЦИИ ПРИ ЧИСТОЙ УСТАНОВКЕ\n\n"
-            "Полезный софт после переустановки Windows:\n"
-            "твики, утилиты, инструменты разработчика"
+            f"{tr('start.btn_rec.title')}\n\n{tr('start.btn_rec.desc')}"
         )
         btn_rec.setProperty("cssClass", "card")
         btn_rec.setFixedSize(500, 110)

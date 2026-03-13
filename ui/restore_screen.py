@@ -16,6 +16,7 @@ from core.file_operations import CopyProgress, restore_entries
 from ui.components.file_list import FileTreeWidget
 from ui.components.progress_modal import ProgressModal
 from utils.helpers import format_size, get_username
+from utils.i18n import tr
 
 
 def _parse_programs_md(text: str) -> list[tuple[str, list[dict]]]:
@@ -88,12 +89,12 @@ class RestoreScreen(QWidget):
         self.main_layout.setSpacing(8)
 
         header = QHBoxLayout()
-        btn_back = QPushButton("\u2190 Назад")
+        btn_back = QPushButton(tr("restore.btn_back"))
         btn_back.setProperty("cssClass", "flat")
         btn_back.setFixedWidth(90)
         btn_back.clicked.connect(self.on_back)
         header.addWidget(btn_back)
-        self.lbl_title = QLabel("Восстановление")
+        self.lbl_title = QLabel(tr("restore.title"))
         self.lbl_title.setProperty("cssClass", "heading")
         self.lbl_title.setAlignment(Qt.AlignCenter)
         header.addWidget(self.lbl_title, 1)
@@ -123,15 +124,15 @@ class RestoreScreen(QWidget):
         icon.setStyleSheet("font-size: 48px;")
         icon.setAlignment(Qt.AlignCenter)
         lo.addWidget(icon)
-        lbl1 = QLabel("Файл конфигурации не найден")
+        lbl1 = QLabel(tr("restore.no_config"))
         lbl1.setStyleSheet("font-size: 16px; font-weight: bold;")
         lbl1.setAlignment(Qt.AlignCenter)
         lo.addWidget(lbl1)
-        lbl2 = QLabel("Укажите путь к файлу recovery_config.json вручную")
+        lbl2 = QLabel(tr("restore.no_config_hint"))
         lbl2.setStyleSheet("color: #888;")
         lbl2.setAlignment(Qt.AlignCenter)
         lo.addWidget(lbl2)
-        btn = QPushButton("\U0001f4c2 Выбрать файл конфига")
+        btn = QPushButton(tr("restore.btn_pick_config"))
         btn.setProperty("cssClass", "primary")
         btn.setFixedSize(240, 40)
         btn.clicked.connect(self._browse_config)
@@ -140,8 +141,8 @@ class RestoreScreen(QWidget):
 
     def _browse_config(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Выберите recovery_config.json", "",
-            "JSON файлы (*.json);;Все файлы (*.*)")
+            self, tr("restore.dlg_config_title"), "",
+            tr("restore.dlg_config_filter"))
         if path:
             self._load_config(Path(path))
 
@@ -150,7 +151,7 @@ class RestoreScreen(QWidget):
             self.config_data = config_manager.load_config(config_path)
             self.config_path = config_path
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить конфиг:\n{e}")
+            QMessageBox.critical(self, tr("restore.error_title"), tr("restore.error_load", error=e))
             return
         self._build_restore_ui()
 
@@ -159,13 +160,12 @@ class RestoreScreen(QWidget):
         config = self.config_data
         old_username = config.get("old_username", "?")
         new_username = get_username()
-        session_name = config.get("session_name", "Без названия")
+        session_name = config.get("session_name", tr("restore.no_session_name"))
         created = config.get("created_at", "")
-        self.lbl_title.setText(f"Восстановление — {session_name}")
+        self.lbl_title.setText(tr("restore.title_session", name=session_name))
 
-        info = QLabel(
-            f"\U0001f4cb Сессия: {session_name}  \u2022  Создана: {created}\n"
-            f"\U0001f464 Старый пользователь: {old_username}  \u2192  Новый: {new_username}")
+        info = QLabel(tr("restore.session_info",
+                         name=session_name, date=created, old=old_username, new=new_username))
         info.setWordWrap(True)
         info.setStyleSheet("background-color: #16213e; border-radius: 6px; padding: 10px;")
         self.content_layout.addWidget(info)
@@ -184,8 +184,8 @@ class RestoreScreen(QWidget):
             lo = QVBoxLayout(tab)
             lo.setContentsMargins(4, 4, 4, 4)
             top = QHBoxLayout()
-            b1 = QPushButton("Выбрать все")
-            b2 = QPushButton("Снять все")
+            b1 = QPushButton(tr("restore.btn_all"))
+            b2 = QPushButton(tr("restore.btn_none"))
             top.addWidget(b1); top.addWidget(b2); top.addStretch()
             lo.addLayout(top)
             self.restore_config_tree = FileTreeWidget(item_type="config")
@@ -200,15 +200,15 @@ class RestoreScreen(QWidget):
                     name=f"{e.get('name', '?')}  \u2192  {dest_path}",
                     path=e.get("source_path", ""), size=e.get("size_bytes", 0),
                     is_dir=e.get("is_dir", True), data=e)
-            tabview.addTab(tab, f"Конфиги ({len(configs)})")
+            tabview.addTab(tab, tr("restore.tab_configs", count=len(configs)))
 
         if personal:
             tab = QWidget()
             lo = QVBoxLayout(tab)
             lo.setContentsMargins(4, 4, 4, 4)
             top = QHBoxLayout()
-            b1 = QPushButton("Выбрать все")
-            b2 = QPushButton("Снять все")
+            b1 = QPushButton(tr("restore.btn_all"))
+            b2 = QPushButton(tr("restore.btn_none"))
             top.addWidget(b1); top.addWidget(b2); top.addStretch()
             lo.addLayout(top)
             self.restore_personal_tree = FileTreeWidget(item_type="personal")
@@ -223,14 +223,14 @@ class RestoreScreen(QWidget):
                     name=f"{e.get('name', Path(e.get('source_path','')).name)}  \u2192  {dest_path}",
                     path=e.get("source_path", ""), size=e.get("size_bytes", 0),
                     is_dir=e.get("is_dir", False), data=e)
-            tabview.addTab(tab, f"Личные файлы ({len(personal)})")
+            tabview.addTab(tab, tr("restore.tab_personal", count=len(personal)))
 
         # Вкладка программ (если есть programs_list.md)
         self._load_programs_tab(tabview)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn = QPushButton("\U0001f504 ВОССТАНОВИТЬ ВЫБРАННОЕ")
+        btn = QPushButton(tr("restore.btn_restore"))
         btn.setProperty("cssClass", "primary")
         btn.setFixedSize(300, 42)
         btn.clicked.connect(self._start_restore)
@@ -260,14 +260,14 @@ class RestoreScreen(QWidget):
 
         # Поиск
         search = QLineEdit()
-        search.setPlaceholderText("🔍 Поиск по программе или издателю...")
+        search.setPlaceholderText(tr("restore.prog_search"))
         search.setClearButtonEnabled(True)
         lo.addWidget(search)
 
         # Дерево
         tree = QTreeWidget()
         tree.setColumnCount(4)
-        tree.setHeaderLabels(["Программа", "Издатель", "Версия", "Установлена"])
+        tree.setHeaderLabels([tr("restore.prog_col_name"), tr("restore.prog_col_pub"), tr("restore.prog_col_ver"), tr("restore.prog_col_date")])
         tree.setAlternatingRowColors(True)
         tree.setSortingEnabled(True)
         tree.setRootIsDecorated(True)
@@ -282,7 +282,7 @@ class RestoreScreen(QWidget):
         for cat_name, entries in categories:
             cat_item = QTreeWidgetItem()
             cat_item.setText(0, cat_name)
-            cat_item.setText(1, f"{len(entries)} программ")
+            cat_item.setText(1, tr("restore.prog_count", count=len(entries)))
             cat_item.setExpanded(False)
             tree.addTopLevelItem(cat_item)
             for e in entries:
@@ -296,7 +296,7 @@ class RestoreScreen(QWidget):
         lo.addWidget(tree, 1)
 
         # Статус
-        lbl = QLabel(f"Всего программ: {total_count}")
+        lbl = QLabel(tr("restore.prog_total", count=total_count))
         lbl.setProperty("cssClass", "muted")
         lo.addWidget(lbl)
 
@@ -316,13 +316,13 @@ class RestoreScreen(QWidget):
                         visible_total += 1
                 top.setHidden(not any_visible)
             lbl.setText(
-                f"Найдено: {visible_total} из {total_count}" if tl
-                else f"Всего программ: {total_count}"
+                tr("restore.prog_found", count=visible_total) if tl
+                else tr("restore.prog_total", count=total_count)
             )
 
         search.textChanged.connect(_filter)
 
-        tabview.addTab(tab, f"📋 Программы ({total_count})")
+        tabview.addTab(tab, tr("restore.tab_programs", count=total_count))
 
     def _start_restore(self):
         selected = []
@@ -331,7 +331,7 @@ class RestoreScreen(QWidget):
         if self.restore_personal_tree:
             selected.extend(self.restore_personal_tree.get_selected_data())
         if not selected:
-            QMessageBox.warning(self, "Внимание", "Выберите элементы!")
+            QMessageBox.warning(self, tr("restore.warn_title"), tr("restore.warn_pick"))
             return
 
         config = self.config_data
@@ -340,7 +340,7 @@ class RestoreScreen(QWidget):
         archive_mode = config.get("archive_mode", False)
         source_folder = self.config_path.parent
 
-        modal = ProgressModal(self, title="Восстановление")
+        modal = ProgressModal(self, title=tr("restore.progress_title"))
         self._restore_signals = _RestoreSignals()
 
         def _on_done(results):
@@ -356,15 +356,15 @@ class RestoreScreen(QWidget):
                 pass
             ok = [e for e in results if e.get("status") == "ok"]
             err = [e for e in results if e.get("status", "").startswith("error")]
-            msg = "Результаты:\n\n"
+            msg = tr("restore.results_prefix")
             for e in ok:
-                msg += f"\u2705 {e.get('name', '?')} — успешно\n"
+                msg += tr("restore.result_ok", name=e.get("name", "?"))
             for e in err:
-                msg += f"\u274c {e.get('name', '?')} — {e.get('status', '')}\n"
+                msg += tr("restore.result_err", name=e.get("name", "?"), status=e.get("status", ""))
             if err:
-                QMessageBox.warning(self, "Завершено", msg)
+                QMessageBox.warning(self, tr("restore.done_title"), msg)
             else:
-                QMessageBox.information(self, "Завершено", msg)
+                QMessageBox.information(self, tr("restore.done_title"), msg)
 
         self._restore_signals.finished.connect(_on_done)
 
