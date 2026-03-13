@@ -1,8 +1,13 @@
 # WinRecover
 
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](../../releases/latest)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-lightgrey?logo=windows)](../../releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Lang](https://img.shields.io/badge/lang-RU%20%7C%20EN-orange)](#)
+
 **Помощник при переустановке Windows** — инструмент, который помогает сохранить конфиги, личные файлы и список программ перед чистой установкой, а после — восстановить всё обратно.
 
-Интерфейс доступен на **русском** и **английском** языках.
+> [English version →](README_EN.md)
 
 ![Скриншот](assets/screenshoot.png)
 
@@ -32,7 +37,7 @@
 
 ## Скачать
 
-> Готовый `.exe` — на странице [Releases](../../releases/latest). Установка не требуется, запускается как есть.
+> Готовый `.exe` не требует установки — скачайте на странице [Releases](../../releases/latest) и запустите.
 
 ---
 
