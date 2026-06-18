@@ -16,22 +16,47 @@
 ## Features
 
 ### Before Reinstalling
-- **AppData Scanning** — finds configs of installed programs (VS Code, Discord, OBS, JetBrains, etc.) with recommendations on what's worth keeping vs. what restores automatically
+- **AppData Scanning** — finds configs of installed programs (VS Code, Discord, OBS, JetBrains, plus AI agents & tools: Claude Desktop/Code, Cursor, Windsurf, Ollama, LM Studio, etc.) with recommendations on what's worth keeping vs. what restores automatically
 - **SSH Keys** — automatically locates `~/.ssh/` and offers to include it in the backup
 - **Personal Files** — Documents, Pictures, Videos, Music, Downloads
-- **Program List** — scans the Windows registry, groups by category, generates a Markdown file for easy reinstallation
+- **Program List** — scans the Windows registry, groups by category (including "🤖 AI Tools"), generates a Markdown file for easy reinstallation
 - **Games Warning** — detects games on drive C: from Steam, Epic Games, and GOG Galaxy
 - **Obsidian Warning** — finds local Obsidian vaults
-- **Backup Creation** — copies or archives selected files to another drive
+- **Scan Progress** — shown as a percentage across phases
+- **Backup Creation** — copies or archives (ZIP) selected files to another drive
 
 ### After Reinstalling
 - Browse the backup with a file tree view
 - Installed programs list for manual reinstallation
-- Restore files from the backup
+- Restore files from the backup (from a copy or a ZIP archive)
 
 ### Fresh Install Recommendations
-- Curated list of useful software by category: tweaks, customization, development, security, media, and more
+- Curated list of useful software by category: tweaks, customization, development, **AI agents & tools**, security, media, and more
+- Search by name and description
 - Links to the official page of each tool
+
+---
+
+## Backup Layout
+
+The backup mirrors your user folder, so you can restore data manually even if
+the app won't start:
+
+```
+recover/
+├── КАК_ВОССТАНОВИТЬ.txt        # Restore guide (RU/EN) with a "what → where" map
+├── recovery_config.json        # Session metadata (read by the restore screen)
+├── programs_list.md            # Program list for reinstallation
+├── configs/                    # Mirror of configs relative to %USERPROFILE%
+│   ├── AppData/Roaming/Code/…  → %USERPROFILE%\AppData\Roaming\Code
+│   └── .ssh/id_rsa             → %USERPROFILE%\.ssh\id_rsa
+└── personal/                   # Mirror of personal files
+    └── Documents/cv.pdf        → %USERPROFILE%\Documents\cv.pdf
+```
+
+In archive mode the same `configs/` and `personal/` folders live inside
+`recovery_archive.zip`. **Manual restore:** extract the archive (if any) and
+copy the contents of `configs\` and `personal\` back into `C:\Users\<you>\`.
 
 ---
 
@@ -62,7 +87,8 @@ python main.py
 |---------|---------|
 | `PySide6` | GUI (Qt6) |
 | `psutil` | Disk and partition info |
-| `py7zr` | Creating .7z archives |
+
+> Archives are created in ZIP format via the standard `zipfile` module — no extra dependency needed.
 
 ---
 
@@ -72,6 +98,7 @@ python main.py
 WinRecover/
 ├── main.py                    # Entry point
 ├── config_manager.py          # Backup config management
+├── test_file_operations.py    # copy/archive → restore tests (python test_file_operations.py)
 ├── requirements.txt
 ├── assets/                    # Icon and screenshots
 ├── core/

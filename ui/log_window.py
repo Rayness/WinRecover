@@ -69,7 +69,7 @@ class LogWindow(QDialog):
         font = QFont("Consolas", 9)
         font.setStyleHint(QFont.Monospace)
         self._text.setFont(font)
-        self._text.setStyleSheet("background: #11111b; color: #cdd6f4; border: 1px solid #313244;")
+        self._text.setStyleSheet("background: #11111b; color: #cdd6f4; border: 1px solid #2a2a4a;")
         lo.addWidget(self._text, 1)
 
         self._record_count = 0

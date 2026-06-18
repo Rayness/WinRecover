@@ -17,6 +17,7 @@ CATEGORIES_ORDER = [
     "🏢 Microsoft",
     "🌐 Браузеры",
     "🎮 Игры и лаунчеры",
+    "🤖 ИИ-инструменты",
     "💻 Разработка",
     "🎵 Медиа",
     "🔒 Безопасность",
@@ -100,6 +101,16 @@ def _detect_category(name: str, publisher: str) -> str:
         "2k games", "activision",
     ]):
         return "🎮 Игры и лаунчеры"
+
+    # ИИ-инструменты (до «Разработки» — иначе Cursor/Windsurf уйдут не туда)
+    if any(k in nl for k in [
+        "claude", "cursor", "windsurf", "codeium", "ollama", "lm studio",
+        "gpt4all", "anythingllm", "librechat", "msty", "perplexity",
+        "chatgpt", "copilot", "jan ", "comfyui", "stable diffusion", "lm-studio",
+    ]):
+        return "🤖 ИИ-инструменты"
+    if any(p in pl for p in ["anthropic", "openai"]):
+        return "🤖 ИИ-инструменты"
 
     # Разработка
     if any(k in nl for k in [

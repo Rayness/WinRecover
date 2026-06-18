@@ -78,6 +78,7 @@ _CAT_EN: dict[str, str] = {
     "🏢 Microsoft":       "🏢 Microsoft",
     "🌐 Браузеры":        "🌐 Browsers",
     "🎮 Игры и лаунчеры": "🎮 Games & Launchers",
+    "🤖 ИИ-инструменты":  "🤖 AI Tools",
     "💻 Разработка":      "💻 Development",
     "🎵 Медиа":           "🎵 Media",
     "🔒 Безопасность":    "🔒 Security",
@@ -118,6 +119,8 @@ _S: dict[str, dict[str, str]] = {
         "rec.title":    "💡 Рекомендации при чистой установке Windows",
         "rec.hint":     "Список полезных программ, которые стоит установить после чистой инсталляции Windows. "
                         "Нажмите на ссылку рядом с названием, чтобы открыть официальную страницу.",
+        "rec.search":   "🔍 Поиск по названию или описанию...",
+        "rec.nothing":  "Ничего не найдено",
 
         # Prepare — navigation
         "prepare.btn_back": "← Назад",
@@ -316,6 +319,8 @@ _S: dict[str, dict[str, str]] = {
         "rec.title":    "💡 Fresh Install Recommendations",
         "rec.hint":     "A curated list of useful programs to install after a fresh Windows installation. "
                         "Click the link next to a program name to open its official page.",
+        "rec.search":   "🔍 Search by name or description...",
+        "rec.nothing":  "Nothing found",
 
         # Prepare — navigation
         "prepare.btn_back": "← Back",

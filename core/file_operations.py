@@ -11,6 +11,29 @@ from typing import Callable
 logger = logging.getLogger(__name__)
 
 
+def _safe_rel(rel: str, fallback_name: str) -> Path:
+    """Превращает relative_path в безопасный относительный путь для хранения.
+
+    Убирает диск/корень (для своих папок вне ~), чтобы при join он не сбрасывал
+    путь назначения. Так два файла с одним именем из разных папок
+    (Documents/report.pdf и Downloads/report.pdf) не перезаписывают друг друга.
+    """
+    p = Path(rel) if rel else Path(fallback_name)
+    if p.anchor:  # абсолютный путь или с буквой диска → делаем относительным
+        p = Path(*p.parts[1:]) if len(p.parts) > 1 else Path(p.name)
+    return p
+
+
+def _entry_rel(entry: dict) -> Path:
+    """Относительный путь хранения записи (зеркалит папку пользователя)."""
+    name = entry.get("name") or Path(entry.get("source_path", "")).name
+    return _safe_rel(entry.get("relative_path", ""), name)
+
+
+def _subdir(entry: dict) -> str:
+    return "configs" if entry.get("type", "config") == "config" else "personal"
+
+
 @dataclass
 class CopyProgress:
     """Прогресс копирования."""
@@ -72,12 +95,55 @@ def copy_entries(
     else:
         result = _copy_flat(entries, destination, progress, progress_callback, cancel_check, start_time)
 
+    try:
+        _write_manifest(entries, destination, archive_mode)
+    except Exception:
+        logger.warning("[copy_entries] Не удалось записать инструкцию восстановления", exc_info=True)
+
     elapsed = time.time() - start_time
     ok = sum(1 for e in result if e.get("status") == "ok")
     err = sum(1 for e in result if e.get("status", "").startswith("error"))
     logger.info("[copy_entries] ЗАВЕРШЕНО за %.1fс: ok=%d, ошибок=%d", elapsed, ok, err)
     logger.info("=" * 60)
     return result
+
+
+MANIFEST_FILENAME = "КАК_ВОССТАНОВИТЬ.txt"
+
+
+def _write_manifest(entries: list[dict], destination: Path, archive_mode: bool):
+    """Пишет человекочитаемую инструкцию: что куда копировать вручную."""
+    destination.mkdir(parents=True, exist_ok=True)
+    lines: list[str] = [
+        "КАК ВОССТАНОВИТЬ ДАННЫЕ ВРУЧНУЮ / HOW TO RESTORE MANUALLY",
+        "=" * 60,
+        "",
+        "[RU] Если WinRecover не запускается, восстановите данные сами.",
+        "Структура копии повторяет вашу папку пользователя (C:\\Users\\<имя>).",
+    ]
+    if archive_mode:
+        lines.append("Сначала распакуйте recovery_archive.zip — внутри папки configs/ и personal/.")
+    lines += [
+        "Скопируйте содержимое configs\\ и personal\\ в C:\\Users\\<ВАШ_ПОЛЬЗОВАТЕЛЬ>\\",
+        "(с заменой файлов). Карта соответствия — ниже.",
+        "",
+        "[EN] If WinRecover won't start, restore manually.",
+        "The backup mirrors your user folder. Copy the contents of configs\\ and",
+        "personal\\ into C:\\Users\\<YOUR_USER>\\ (overwrite). See the map below.",
+        "",
+        "КАРТА / MAP (в копии  ->  куда положить):",
+        "-" * 60,
+    ]
+
+    for e in sorted(entries, key=lambda x: (_subdir(x), str(_entry_rel(x)).lower())):
+        store = f"{_subdir(e)}\\{_entry_rel(e)}"
+        target_rel = (e.get("relative_path", "") or e.get("name", "")).replace("/", "\\")
+        lines.append(f"{store}")
+        lines.append(f"    ->  %USERPROFILE%\\{target_rel}")
+    lines.append("")
+
+    (destination / MANIFEST_FILENAME).write_text("\n".join(lines), encoding="utf-8")
+    logger.info("[manifest] Инструкция записана: %s", destination / MANIFEST_FILENAME)
 
 
 def _update_speed(progress: CopyProgress, start_time: float):
@@ -107,14 +173,13 @@ def _copy_flat(
             break
 
         source = Path(entry["source_path"])
-        entry_type = entry.get("type", "config")
+        # Структура копии зеркалит папку пользователя:
+        #   configs/AppData/Roaming/Code  →  %USERPROFILE%\AppData\Roaming\Code
+        #   personal/Documents/report.pdf →  %USERPROFILE%\Documents\report.pdf
+        # Так пользователь может восстановить вручную, просто скопировав обратно.
+        dest_path = destination / _subdir(entry) / _entry_rel(entry)
 
-        if entry_type == "config":
-            dest_dir = destination / "configs" / entry["name"]
-        else:
-            dest_dir = destination / "personal"
-
-        logger.info("[copy_flat] [%d/%d] Копирую: %s -> %s", i + 1, len(entries), entry["name"], dest_dir)
+        logger.info("[copy_flat] [%d/%d] Копирую: %s -> %s", i + 1, len(entries), entry["name"], dest_path)
         entry_start = time.time()
 
         try:
@@ -123,16 +188,16 @@ def _copy_flat(
                 progress_callback(progress)
 
             if source.is_dir():
-                if dest_dir.exists():
-                    shutil.rmtree(dest_dir)
+                if dest_path.exists():
+                    shutil.rmtree(dest_path)
                 shutil.copytree(
-                    source, dest_dir,
+                    source, dest_path,
                     dirs_exist_ok=True,
                     ignore_dangling_symlinks=True,
                 )
             elif source.is_file():
-                dest_dir.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, dest_dir / source.name)
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, dest_path)
 
             entry["status"] = "ok"
             entry_elapsed = time.time() - entry_start
@@ -171,8 +236,10 @@ def _copy_as_archive(
                     break
 
                 source = Path(entry["source_path"])
-                entry_type = entry.get("type", "config")
-                prefix = "configs" if entry_type == "config" else "personal"
+                # Та же зеркальная структура, что и в обычном копировании.
+                # arcname — только прямые слэши (as_posix), иначе на Windows
+                # в zip попадали обратные слэши и архив открывался «криво».
+                base = f"{_subdir(entry)}/{_entry_rel(entry).as_posix()}"
 
                 logger.info("[copy_archive] [%d/%d] Добавляю: %s", i + 1, len(entries), entry["name"])
                 entry_start = time.time()
@@ -185,14 +252,28 @@ def _copy_as_archive(
                     if source.is_dir():
                         file_count = 0
                         for file_path in source.rglob("*"):
-                            if file_path.is_file():
-                                arcname = f"{prefix}/{entry['name']}/{file_path.relative_to(source)}"
-                                zf.write(file_path, arcname)
-                                file_count += 1
+                            if cancel_check and cancel_check():
+                                break
+                            if not file_path.is_file():
+                                continue
+                            arcname = f"{base}/{file_path.relative_to(source).as_posix()}"
+                            zf.write(file_path, arcname)
+                            file_count += 1
+                            try:
+                                progress.copied_bytes += file_path.stat().st_size
+                            except OSError:
+                                pass
+                            if file_count % 50 == 0:  # плавный прогресс на больших папках
+                                _update_speed(progress, start_time)
+                                if progress_callback:
+                                    progress_callback(progress)
                         logger.info("[copy_archive]   -> %d файлов добавлено", file_count)
                     elif source.is_file():
-                        arcname = f"{prefix}/{source.name}"
-                        zf.write(source, arcname)
+                        zf.write(source, base)
+                        try:
+                            progress.copied_bytes += source.stat().st_size
+                        except OSError:
+                            pass
 
                     entry["status"] = "ok"
                     entry_elapsed = time.time() - entry_start
@@ -202,7 +283,6 @@ def _copy_as_archive(
                     entry["status"] = f"error: {e}"
                     logger.error("[copy_archive]   -> ОШИБКА: %s", e)
 
-                progress.copied_bytes += entry.get("size_bytes", 0)
                 _update_speed(progress, start_time)
                 if progress_callback:
                     progress_callback(progress)
@@ -232,54 +312,63 @@ def restore_entries(
     total_bytes = sum(e.get("size_bytes", 0) for e in entries)
     progress = CopyProgress(total_bytes=total_bytes)
     start_time = time.time()
-
-    if archive_mode:
-        logger.info("[restore] Распаковка архива...")
-        _extract_archive(source_folder)
-
     user_dir = Path.home()
     logger.info("[restore] Домашняя папка: %s", user_dir)
 
-    for i, entry in enumerate(entries):
-        if cancel_check and cancel_check():
-            logger.info("[restore] ОТМЕНА на записи %d/%d", i + 1, len(entries))
-            break
+    zf = None
+    if archive_mode:
+        archive_path = source_folder / "recovery_archive.zip"
+        if not archive_path.exists():
+            logger.error("[restore] Архив не найден: %s", archive_path)
+            for e in entries:
+                e["status"] = "error: архив не найден"
+            return entries
+        zf = zipfile.ZipFile(archive_path, "r")
 
-        try:
-            progress.current_file = entry["name"]
+    try:
+        for i, entry in enumerate(entries):
+            if cancel_check and cancel_check():
+                logger.info("[restore] ОТМЕНА на записи %d/%d", i + 1, len(entries))
+                break
+
+            try:
+                progress.current_file = entry["name"]
+                if progress_callback:
+                    progress_callback(progress)
+
+                rel = _entry_rel(entry)
+                # Назначение: папка пользователя + относительный путь (с заменой имени)
+                dest_rel = str(rel).replace(old_username, new_username)
+                dest = user_dir / dest_rel
+                logger.info("[restore] [%d/%d] %s -> %s", i + 1, len(entries), entry["name"], dest)
+
+                if zf is not None:
+                    _restore_entry_from_zip(zf, entry, rel, user_dir, old_username, new_username)
+                else:
+                    src = source_folder / _subdir(entry) / rel
+                    if src.is_dir():
+                        dest.mkdir(parents=True, exist_ok=True)
+                        shutil.copytree(src, dest, dirs_exist_ok=True)
+                    elif src.is_file():
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(src, dest)
+                    else:
+                        raise FileNotFoundError(f"нет данных в копии: {src}")
+
+                entry["status"] = "ok"
+                logger.info("[restore]   -> OK")
+
+            except Exception as e:
+                entry["status"] = f"error: {e}"
+                logger.error("[restore]   -> ОШИБКА: %s", e)
+
+            progress.copied_bytes += entry.get("size_bytes", 0)
+            _update_speed(progress, start_time)
             if progress_callback:
                 progress_callback(progress)
-
-            entry_type = entry.get("type", "config")
-            if entry_type == "config":
-                src = source_folder / "configs" / entry["name"]
-            else:
-                src = source_folder / "personal" / entry["name"]
-
-            rel_path = entry.get("relative_path", "")
-            rel_path = rel_path.replace(old_username, new_username)
-            dest = user_dir / rel_path
-
-            logger.info("[restore] [%d/%d] %s: %s -> %s", i + 1, len(entries), entry["name"], src, dest)
-
-            if src.is_dir():
-                dest.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(src, dest, dirs_exist_ok=True)
-            elif src.is_file():
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, dest)
-
-            entry["status"] = "ok"
-            logger.info("[restore]   -> OK")
-
-        except Exception as e:
-            entry["status"] = f"error: {e}"
-            logger.error("[restore]   -> ОШИБКА: %s", e)
-
-        progress.copied_bytes += entry.get("size_bytes", 0)
-        _update_speed(progress, start_time)
-        if progress_callback:
-            progress_callback(progress)
+    finally:
+        if zf is not None:
+            zf.close()
 
     elapsed = time.time() - start_time
     ok = sum(1 for e in entries if e.get("status") == "ok")
@@ -289,15 +378,22 @@ def restore_entries(
     return entries
 
 
-def _extract_archive(source_folder: Path):
-    """Распаковывает архив в папку."""
-    archive_path = source_folder / "recovery_archive.zip"
-    if archive_path.exists():
-        logger.info("[extract] Распаковываю: %s", archive_path)
-        start = time.time()
-        with zipfile.ZipFile(archive_path, "r") as zf:
-            zf.extractall(source_folder)
-        elapsed = time.time() - start
-        logger.info("[extract] Архив распакован за %.1fс", elapsed)
-    else:
-        logger.warning("[extract] Архив не найден: %s", archive_path)
+def _restore_entry_from_zip(zf: zipfile.ZipFile, entry: dict, rel: Path,
+                            user_dir: Path, old_username: str, new_username: str):
+    """Распаковывает файлы одной записи прямо в папку пользователя."""
+    base = f"{_subdir(entry)}/{rel.as_posix()}"          # configs/AppData/Roaming/Code
+    home_prefix_len = len(_subdir(entry)) + 1            # длина "configs/" / "personal/"
+    extracted = 0
+    for name in zf.namelist():
+        if name.endswith("/"):
+            continue
+        if name != base and not name.startswith(base + "/"):
+            continue
+        rel_in_home = name[home_prefix_len:].replace(old_username, new_username)
+        target = user_dir / rel_in_home
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with zf.open(name) as src_f, open(target, "wb") as dst_f:
+            shutil.copyfileobj(src_f, dst_f)
+        extracted += 1
+    if extracted == 0:
+        raise FileNotFoundError(f"в архиве нет данных для {base}")

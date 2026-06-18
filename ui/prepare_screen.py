@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 class _ScanSignals(QObject):
     progress = Signal(str)
+    pct = Signal(int)        # 0..100, или -1 для неопределённого режима
     finished = Signal()
 
 
@@ -113,7 +114,9 @@ class PrepareScreen(QWidget):
             tr("prepare.step4"),
         ]
         self.lbl_step.setText(titles[step])
-        if step == 0:
+        # Анализируем диски только при первом входе — иначе возврат «Назад»
+        # затирает введённые пользователем папку/название и перезапускает скан.
+        if step == 0 and not self.partitions:
             self._analyze_disks()
 
     # ═══ ШАГ 1: Анализ дисков ═══════════════════════════
@@ -438,7 +441,8 @@ class PrepareScreen(QWidget):
         self.scan_lbl.setAlignment(Qt.AlignCenter)
         scan_layout.addWidget(self.scan_lbl)
         self.scan_bar = QProgressBar()
-        self.scan_bar.setRange(0, 0)
+        self.scan_bar.setRange(0, 100)
+        self.scan_bar.setValue(0)
         self.scan_bar.setFixedWidth(400)
         scan_layout.addWidget(self.scan_bar, alignment=Qt.AlignCenter)
         self.scan_current = QLabel("")
@@ -497,9 +501,26 @@ class PrepareScreen(QWidget):
         self.found_programs.clear()
         self.scan_widget.setVisible(True)
 
+        self.scan_bar.setRange(0, 100)
+        self.scan_bar.setValue(0)
         self._scan_signals = _ScanSignals()
         self._scan_signals.progress.connect(self._update_scan_label)
+        self._scan_signals.pct.connect(self._update_scan_pct)
         self._scan_signals.finished.connect(self._scan_done)
+
+        # Веса фаз (только включённые) — конфиги самые долгие
+        w_cfg = 0.80 if scan_configs else 0.0
+        w_pers = 0.15 if scan_personal else 0.0
+        w_prog = 0.05 if scan_programs else 0.0
+        wsum = (w_cfg + w_pers + w_prog) or 1.0
+        last_pct = [-1]
+
+        def emit_pct(frac_cfg, done_pers, done_prog):
+            overall = (frac_cfg * w_cfg + done_pers * w_pers + done_prog * w_prog) / wsum
+            val = int(overall * 100)
+            if val != last_pct[0]:           # не спамим одинаковыми значениями
+                last_pct[0] = val
+                self._scan_signals.pct.emit(val)
 
         def _scan():
             logger.info("[scan thread] Запущен")
@@ -509,6 +530,7 @@ class PrepareScreen(QWidget):
                     username,
                     progress_callback=lambda p: self._scan_signals.progress.emit(p),
                     cancel_check=lambda: self._cancel_scan,
+                    pct_callback=lambda f: emit_pct(f, 0, 0),
                 )
                 logger.info("[scan thread] Конфигов: %d", len(self.found_configs))
                 # SSH-ключи добавляем вместе с конфигами
@@ -517,6 +539,7 @@ class PrepareScreen(QWidget):
                     ssh_items = scan_ssh_keys()
                     self.found_configs.extend(ssh_items)
                     logger.info("[scan thread] SSH-файлов: %d", len(ssh_items))
+                emit_pct(1.0, 0, 0)
             if scan_personal and not self._cancel_scan:
                 self.found_personal = scan_personal_files(
                     username,
@@ -524,10 +547,13 @@ class PrepareScreen(QWidget):
                     cancel_check=lambda: self._cancel_scan,
                 )
                 logger.info("[scan thread] Личных: %d", len(self.found_personal))
+                emit_pct(1.0, 1, 0)
             if scan_programs and not self._cancel_scan:
                 self._scan_signals.progress.emit("Чтение реестра установленных программ...")
                 self.found_programs = scan_installed_programs()
                 logger.info("[scan thread] Программ: %d", len(self.found_programs))
+                emit_pct(1.0, 1, 1)
+            self._scan_signals.pct.emit(100)
             self._scan_signals.finished.emit()
 
         threading.Thread(target=_scan, daemon=True).start()
@@ -535,6 +561,15 @@ class PrepareScreen(QWidget):
     def _update_scan_label(self, path: str):
         short = path if len(path) <= 75 else "..." + path[-72:]
         self.scan_current.setText(short)
+
+    def _update_scan_pct(self, pct: int):
+        if pct < 0:  # неопределённый режим
+            self.scan_bar.setRange(0, 0)
+            return
+        if self.scan_bar.maximum() == 0:
+            self.scan_bar.setRange(0, 100)
+        self.scan_bar.setValue(pct)
+        self.scan_bar.setFormat(f"{pct}%")
 
     def _scan_done(self):
         logger.info("[PrepareScreen] Сканирование завершено: configs=%d, personal=%d, programs=%d",
@@ -901,7 +936,8 @@ class PrepareScreen(QWidget):
                     entries = groups[cat]
                     is_skip_cat = cat in _SKIP_CATS
                     hdr_item = QTreeWidgetItem()
-                    hdr_item.setText(0, cat)
+                    hdr_item.setText(0, tr_cat(cat))
+                    hdr_item.setData(0, Qt.UserRole, cat)  # сырое имя для сравнения
                     hdr_item.setText(1, tr("prepare.s3.prog_count", count=len(entries)))
                     hdr_item.setCheckState(0, Qt.Unchecked if is_skip_cat else Qt.Checked)
                     hdr_item.setFlags(hdr_item.flags() | Qt.ItemIsUserCheckable)
@@ -976,7 +1012,7 @@ class PrepareScreen(QWidget):
                 if is_grouped:
                     for i in range(tree.topLevelItemCount()):
                         top = tree.topLevelItem(i)
-                        if top.text(0) == cat_name:
+                        if top.data(0, Qt.UserRole) == cat_name:
                             top.setCheckState(0, Qt.Unchecked)
                             for j in range(top.childCount()):
                                 top.child(j).setCheckState(0, Qt.Unchecked)

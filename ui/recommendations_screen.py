@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame, QSizePolicy,
+    QScrollArea, QFrame, QSizePolicy, QLineEdit,
 )
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
@@ -281,6 +281,40 @@ _REC_DATA: list[tuple[str, str, list[tuple[str, str, str, str]]]] = [
          "GPU overclocking, monitoring and in-game OSD overlay",
          "https://www.msi.com/Landing/afterburner/graphics-cards"),
     ]),
+    ("🤖 ИИ-агенты и инструменты", "🤖 AI Agents & Tools", [
+        ("Claude Desktop",
+         "Десктоп-клиент Claude от Anthropic с поддержкой MCP-серверов",
+         "Anthropic's Claude desktop client with MCP server support",
+         "https://claude.ai/download"),
+        ("Claude Code",
+         "ИИ-агент для терминала: пишет, рефакторит и отлаживает код",
+         "Agentic coding tool in the terminal: writes, refactors and debugs code",
+         "https://claude.com/claude-code"),
+        ("Cursor",
+         "ИИ-редактор кода на базе VS Code с автодополнением и чатом",
+         "AI code editor built on VS Code with autocomplete and chat",
+         "https://www.cursor.com"),
+        ("Windsurf",
+         "ИИ-IDE от Codeium с агентным режимом Cascade",
+         "AI IDE by Codeium with the agentic Cascade mode",
+         "https://windsurf.com"),
+        ("Ollama",
+         "Запуск локальных LLM (Llama, Mistral, Qwen…) одной командой",
+         "Run local LLMs (Llama, Mistral, Qwen…) with a single command",
+         "https://ollama.com"),
+        ("LM Studio",
+         "Графическая оболочка для локальных моделей с OpenAI-совместимым API",
+         "GUI for running local models with an OpenAI-compatible API",
+         "https://lmstudio.ai"),
+        ("Jan",
+         "Локальный офлайн-аналог ChatGPT с открытым исходным кодом",
+         "Open-source ChatGPT alternative that runs fully offline",
+         "https://jan.ai"),
+        ("AnythingLLM",
+         "Локальный ИИ-чат поверх ваших документов (RAG), open source",
+         "Local AI chat over your own documents (RAG), open source",
+         "https://anythingllm.com"),
+    ]),
     ("🤖 Автоматизация", "🤖 Automation", [
         ("AutoHotkey",
          "Скрипты для автоматизации действий, горячие клавиши, макросы",
@@ -305,6 +339,8 @@ class RecommendationsScreen(QWidget):
 
     def __init__(self, on_back: callable, parent=None):
         super().__init__(parent)
+        # [(section_frame, [(row_widget, haystack), ...]), ...] — для поиска
+        self._sections: list[tuple[QFrame, list[tuple[QWidget, str]]]] = []
         self._build(on_back)
 
     def _build(self, on_back: callable):
@@ -315,7 +351,7 @@ class RecommendationsScreen(QWidget):
         # ── Шапка ────────────────────────────────────────────────────────
         header = QFrame()
         header.setObjectName("screenHeader")
-        header.setStyleSheet("#screenHeader { background: #1e1e2e; border-bottom: 1px solid #313244; }")
+        header.setStyleSheet("#screenHeader { background: #16213e; border-bottom: 1px solid #2a2a4a; }")
         header_lo = QHBoxLayout(header)
         header_lo.setContentsMargins(16, 12, 16, 12)
 
@@ -331,6 +367,22 @@ class RecommendationsScreen(QWidget):
 
         header_lo.addSpacing(btn_back.sizeHint().width())
         root.addWidget(header)
+
+        # ── Строка поиска ─────────────────────────────────────────────────
+        search_bar = QFrame()
+        search_bar.setStyleSheet("background: #16213e; border-bottom: 1px solid #2a2a4a;")
+        sb_lo = QHBoxLayout(search_bar)
+        sb_lo.setContentsMargins(32, 8, 32, 8)
+        self._search = QLineEdit()
+        self._search.setPlaceholderText(tr("rec.search"))
+        self._search.setClearButtonEnabled(True)
+        self._search.textChanged.connect(self._filter)
+        sb_lo.addWidget(self._search)
+        self._empty_lbl = QLabel(tr("rec.nothing"))
+        self._empty_lbl.setProperty("cssClass", "muted")
+        self._empty_lbl.setVisible(False)
+        sb_lo.addWidget(self._empty_lbl)
+        root.addWidget(search_bar)
 
         # ── Прокручиваемый контент ────────────────────────────────────────
         scroll = QScrollArea()
@@ -352,20 +404,36 @@ class RecommendationsScreen(QWidget):
             title = cat_en if en else cat_ru
             localized = [(name, desc_en if en else desc_ru, url)
                          for name, desc_ru, desc_en, url in items]
-            content_lo.addWidget(self._build_section(title, localized))
+            frame, rows = self._build_section(title, localized)
+            self._sections.append((frame, rows))
+            content_lo.addWidget(frame)
 
         content_lo.addStretch()
         scroll.setWidget(content)
         root.addWidget(scroll, 1)
 
-    def _build_section(self, title: str, items: list[tuple[str, str, str]]) -> QFrame:
+    def _filter(self, text: str):
+        q = text.lower().strip()
+        any_visible = False
+        for frame, rows in self._sections:
+            section_visible = False
+            for row_widget, haystack in rows:
+                match = not q or q in haystack
+                row_widget.setVisible(match)
+                section_visible = section_visible or match
+            frame.setVisible(section_visible)
+            any_visible = any_visible or section_visible
+        self._empty_lbl.setVisible(bool(q) and not any_visible)
+
+    def _build_section(self, title: str, items: list[tuple[str, str, str]]
+                       ) -> tuple[QFrame, list[tuple[QWidget, str]]]:
         frame = QFrame()
         frame.setFrameShape(QFrame.StyledPanel)
         frame.setStyleSheet("""
             QFrame {
-                border: 1px solid #313244;
+                border: 1px solid #2a2a4a;
                 border-radius: 8px;
-                background: #1e1e2e;
+                background: #16213e;
             }
         """)
         lo = QVBoxLayout(frame)
@@ -380,12 +448,16 @@ class RecommendationsScreen(QWidget):
         # Разделитель
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet("border: none; border-top: 1px solid #313244;")
+        sep.setStyleSheet("border: none; border-top: 1px solid #2a2a4a;")
         sep.setFixedHeight(1)
         lo.addWidget(sep)
 
+        rows: list[tuple[QWidget, str]] = []
         for name, desc, url in items:
-            row = QHBoxLayout()
+            row_widget = QWidget()
+            row_widget.setStyleSheet("background: transparent;")
+            row = QHBoxLayout(row_widget)
+            row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(8)
 
             # Название + ссылка
@@ -399,7 +471,7 @@ class RecommendationsScreen(QWidget):
             name_col.addWidget(name_lbl)
 
             if url:
-                link_lbl = QLabel(f'<a href="{url}" style="color:#89b4fa; font-size:11px;">{url}</a>')
+                link_lbl = QLabel(f'<a href="{url}" style="color:#60A5FA; font-size:11px;">{url}</a>')
                 link_lbl.setOpenExternalLinks(False)
                 link_lbl.setTextInteractionFlags(Qt.TextBrowserInteraction)
                 link_lbl.setStyleSheet("border: none;")
@@ -421,6 +493,7 @@ class RecommendationsScreen(QWidget):
             desc_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             row.addWidget(desc_lbl, 1)
 
-            lo.addLayout(row)
+            lo.addWidget(row_widget)
+            rows.append((row_widget, f"{name} {desc}".lower()))
 
-        return frame
+        return frame, rows

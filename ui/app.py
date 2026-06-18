@@ -56,7 +56,7 @@ class App(QMainWindow):
 
     def _build_statusbar(self):
         bar = QStatusBar()
-        bar.setStyleSheet("QStatusBar { border-top: 1px solid #313244; background: #1e1e2e; }")
+        bar.setStyleSheet("QStatusBar { border-top: 1px solid #2a2a4a; background: #16213e; }")
         self.setStatusBar(bar)
 
         self._btn_lang = QPushButton(tr("app.btn_lang"))

@@ -16,7 +16,7 @@ from core.file_operations import CopyProgress, restore_entries
 from ui.components.file_list import FileTreeWidget
 from ui.components.progress_modal import ProgressModal
 from utils.helpers import format_size, get_username
-from utils.i18n import tr
+from utils.i18n import tr, tr_cat
 
 
 def _parse_programs_md(text: str) -> list[tuple[str, list[dict]]]:
@@ -281,7 +281,7 @@ class RestoreScreen(QWidget):
 
         for cat_name, entries in categories:
             cat_item = QTreeWidgetItem()
-            cat_item.setText(0, cat_name)
+            cat_item.setText(0, tr_cat(cat_name))
             cat_item.setText(1, tr("restore.prog_count", count=len(entries)))
             cat_item.setExpanded(False)
             tree.addTopLevelItem(cat_item)

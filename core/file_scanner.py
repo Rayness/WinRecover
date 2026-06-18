@@ -81,6 +81,31 @@ KNOWN_APPS: dict[str, tuple[str, str]] = {
     "vortex":                ("important", "Профили и настройки Vortex (менеджер модов)"),
     "antigravity":           ("important", "Данные и настройки Antigravity"),
 
+    # ИИ-агенты, IDE и десктоп-клиенты — конфиги, чаты, MCP-серверы
+    "claude":                ("important", "Настройки и чаты Claude Desktop"),
+    "claude code":           ("important", "Конфиги и сессии Claude Code"),
+    ".claude":               ("important", "Конфиги, агенты и MCP-серверы Claude Code"),
+    "windsurf":              ("important", "Настройки Windsurf (Codeium)"),
+    "codeium":               ("important", "Настройки и токен Codeium"),
+    ".codeium":              ("important", "Настройки и токен Codeium"),
+    "continue":              ("important", "Конфиги ассистента Continue"),
+    ".continue":             ("important", "Конфиги ассистента Continue"),
+    "zed":                   ("important", "Настройки редактора Zed"),
+    "ollama":                ("important", "Модели и настройки Ollama"),
+    ".ollama":               ("important", "Модели и настройки Ollama"),
+    "lm studio":             ("important", "Настройки и модели LM Studio"),
+    "lmstudio":              ("important", "Настройки и модели LM Studio"),
+    "jan":                   ("important", "Настройки и модели Jan"),
+    "gpt4all":               ("important", "Настройки и модели GPT4All"),
+    "msty":                  ("important", "Настройки Msty"),
+    "chatgpt":               ("important", "Настройки ChatGPT Desktop"),
+    "openai":                ("important", "Данные OpenAI (ChatGPT)"),
+    "perplexity":            ("important", "Настройки Perplexity"),
+    "anythingllm":           ("important", "Рабочие пространства AnythingLLM"),
+    "librechat":             ("important", "Настройки LibreChat"),
+    "aider":                 ("important", "История и настройки Aider"),
+    ".aider":                ("important", "История и настройки Aider"),
+
     # VPN / Proxy клиенты — конфиги и подписки важны
     "flclash":               ("important", "Конфиги и подписки FLClash"),
     "flclashx":              ("important", "Конфиги и подписки FLClashX"),
@@ -118,15 +143,11 @@ KNOWN_APPS: dict[str, tuple[str, str]] = {
 
 
 def _get_priority(name: str) -> tuple[str, str]:
-    """Возвращает (priority, reason) для папки по имени."""
-    lower = name.lower()
-    if lower in KNOWN_APPS:
-        return KNOWN_APPS[lower]
-    # Частичное совпадение для JetBrains (CLion, PyCharm, IDEA, ...)
-    for key, val in KNOWN_APPS.items():
-        if key in lower or lower in key:
-            return val
-    return ("", "")
+    """Возвращает (priority, reason) для папки по имени (точное совпадение)."""
+    # ponytail: только точное совпадение. Подстрочный матчинг давал ложные
+    # срабатывания ("digital" → git, "amd"/"vlc" ловили случайные папки),
+    # а в AppData на верхнем уровне — одна папка на приложение.
+    return KNOWN_APPS.get(name.lower(), ("", ""))
 
 
 @dataclass
@@ -225,8 +246,12 @@ def scan_appdata(
     username: str,
     progress_callback: Callable[[str], None] | None = None,
     cancel_check: Callable[[], bool] | None = None,
+    pct_callback: Callable[[float], None] | None = None,
 ) -> list[FoundItem]:
-    """Сканирует AppData на наличие конфигов программ."""
+    """Сканирует AppData на наличие конфигов программ.
+
+    pct_callback(frac) — доля выполнения 0.0..1.0 (по числу папок AppData).
+    """
     logger.info("=" * 60)
     logger.info("[scan_appdata] НАЧАЛО сканирования для пользователя '%s'", username)
     results: list[FoundItem] = []
@@ -237,6 +262,17 @@ def scan_appdata(
     ]
 
     scan_start = time.time()
+
+    # Предварительный подсчёт папок — для прогресса в процентах
+    total_entries = 0
+    for appdata in appdata_dirs:
+        try:
+            if appdata.exists():
+                total_entries += sum(1 for _ in appdata.iterdir())
+        except OSError:
+            pass
+    total_entries = total_entries or 1
+    processed = 0
 
     for appdata in appdata_dirs:
         location = appdata.name  # "Local" или "Roaming"
@@ -255,6 +291,9 @@ def scan_appdata(
             if cancel_check and cancel_check():
                 logger.info("[scan_appdata] ОТМЕНА сканирования")
                 return results
+            processed += 1
+            if pct_callback:
+                pct_callback(processed / total_entries)
             if not entry.is_dir():
                 continue
             if entry.name.lower() in EXCLUDED_DIRS:
